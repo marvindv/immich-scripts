@@ -14,6 +14,7 @@ rich = "^13.7.0"
 
 [tool.poetry.scripts]
 album2external = "immich_scripts.album2external:cli"
+fix_modified_date = "immich_scripts.fix_modified_date:main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

@@ -7,6 +7,7 @@ from rich.progress import track
 
 from immich_scripts.jobs import BulkDeleteAssetJob, Job, MoveAssetJob, ScanLibraryJob
 from immich_scripts.log import log
+from immich_scripts.utils import get_asset_host_path
 
 
 @click.command(
@@ -83,25 +84,24 @@ def cli(
                 continue
 
             asset_path = PurePath(asset.original_path)
-            if (
-                asset_path.parts[0] != "upload"
-                or asset_path.parts[1] != "library"
-                or asset_path.parts[2] != album.owner.storage_label
-            ):
-                log.error(
-                    f"Asset {asset.original_file_name} ({asset.id}) unexpected path prefix: {asset_path}"
+            try:
+                host_path = get_asset_host_path(
+                    asset, album.owner, host_upload_location
                 )
+            except ValueError as ex:
+                log.error(str(ex))
                 sys.exit(1)
 
-            # Remove leading `upload/` from path and prepend the hosts upload location.
-            host_path = Path(host_upload_location, *asset_path.parts[1:])
-            target_path = Path(target_location, *asset_path.parts[3:])
             if not host_path.exists():
                 log.error(
                     f"Assumed host path of asset {asset_path} ({asset.id}) is {host_path} but the file does not exist. "
                     "Something is wrong. Aborting ..."
                 )
                 sys.exit(1)
+
+            # asset_path should start with upload/library/<owner-storage-label> which we ignore.
+            # target_path will start with the rest.
+            target_path = Path(target_location, *asset_path.parts[3:])
 
             jobs.append(MoveAssetJob(asset, host_path, target_path))
             delete_job.add_asset(asset, host_path)

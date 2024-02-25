@@ -9,8 +9,10 @@ from openapi_client.models.asset_bulk_delete_dto import AssetBulkDeleteDto
 from openapi_client.models.asset_response_dto import AssetResponseDto
 from openapi_client.models.library_response_dto import LibraryResponseDto
 from openapi_client.models.scan_library_dto import ScanLibraryDto
+from openapi_client.models.user_response_dto import UserResponseDto
 
 from .log import log
+from .utils import get_asset_host_path
 
 
 class Job(ABC):
@@ -55,6 +57,40 @@ class MoveAssetJob(Job):
 
 
 Job.register(MoveAssetJob)
+
+
+class SetAssetModifiedDate(Job):
+    """Set the modified date of the given asset to the specified datetime and access date to now."""
+
+    def __init__(
+        self,
+        asset: AssetResponseDto,
+        owner: UserResponseDto,
+        host_upload_location: str,
+        mdate: datetime,
+    ):
+        super().__init__()
+        self._asset = asset
+        self._owner = owner
+        self._host_upload_location = host_upload_location
+        self._mdate = mdate
+
+    def _dry_run(self) -> None:
+        adate = datetime.now()
+        log.info(
+            f"Would set last access to {adate} ({adate.timestamp()}), modified date to {self._mdate} ({self._mdate.timestamp()}) of asset {self._asset.original_path}"
+        )
+
+    def _run(self) -> None:
+        path = get_asset_host_path(
+            self._asset,
+            self._owner,
+            self._host_upload_location,
+        )
+        os.utime(path, (datetime.now().timestamp(), self._mdate.timestamp()))
+
+
+Job.register(SetAssetModifiedDate)
 
 
 class BulkDeleteAssetJob(Job):

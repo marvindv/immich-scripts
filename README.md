@@ -53,6 +53,26 @@ Assets from your partner will not share faces, won't show up on your map and so 
 
 As discussed on [Reddit](https://www.reddit.com/r/immich/comments/17rs415/partner_share_doesnt_share_everything/) an alternative approach is to use a shared external library by both partner accounts. While this comes with the drawback of duplicated thumbnail generation and individual face recognition, it fits my personal needs. But unlike the proposed method on the linked Reddit discussion of just moving all my assets from my own upload library to the shared external library I want to be able to select the assets to move by adding them to specific album. Running this script with the appropriate parameters allows you to do just that.
 
+## Fix Assets Modified Date
+
+Before https://github.com/immich-app/immich/pull/7010 was merged and released with Immich 1.95.0, the modified date of the physical asset file in storage equaled the upload date and time. To set the modified date to the original one, run:
+
+```shell
+docker run -t \
+  --user "1000:1000" \
+  -v /my/library/dir:/my/library/dir \
+  marvindv/immich-scripts fix_modified_date \
+    --api-key <insert your api key> \
+    --api-host http://<insert your immich address>/api \
+    --host-upload-location /my/library/dir \
+    --dry-run
+```
+
+The user running the script needs to have read/write access to the upload library assets and so be sure to adjust the UID and GID in the `--user` argument (or omit since root should be fine here).
+
+Since the container needs to access the actual asset files, the upload directory has
+to be bound with `-v`. In this example the path in the container is the same as the one on the host. You can bind your directory to another path in the container but be sure to change `--host-upload-location` accordingly.
+
 ## Getting Started
 
 ### Prerequisites
